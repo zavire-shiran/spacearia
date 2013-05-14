@@ -78,7 +78,7 @@ class Primitives:
 
     def finalize_buffer(self):
         glBindBuffer(GL_ARRAY_BUFFER, self.glbuffer)
-        print self.buffer
+#        print self.buffer
         glBufferData(GL_ARRAY_BUFFER, numpy.array(self.buffer, numpy.float32), GL_STATIC_DRAW)
 
     def draw(self):
@@ -139,12 +139,13 @@ class Game(World):
         glSamplerParameteri(self.texsampler, GL_TEXTURE_WRAP_S, GL_REPEAT)
         glSamplerParameteri(self.texsampler, GL_TEXTURE_WRAP_T, GL_REPEAT)
 
-        self.camerapos = [0,0]
-        self.scale = 1.0
+        self.camerapos = [10,5]
+        self.scale = 0.3
 
         self.time = 0
 
         self.camcontrols = {'left': False, 'right': False, 'up': False, 'down': False, 'zoomin':False, 'zoomout':False}
+        self.terrain = Terrain()
 
     def keydown(self, key):
         pass
@@ -168,6 +169,37 @@ class Game(World):
         glUniform1i(self.texture_uniform, 1)
         
         self.tris.draw()
+        self.terrain.draw()
 
     def step(self, dt):
         pass
+
+
+class Terrain:
+    def __init__(self):
+        self.prims = None
+        self.width = 20
+        self.height = 10
+        self.tiles = {}
+        for x in xrange(self.width):
+            for y in xrange(self.height):
+                if random.random() > 0.5:
+                    kind = 'rock'
+                else:
+                    kind = 'dirt'
+                self.tiles[(x,y)] = kind
+        self.recalc_prims()
+    def draw(self):
+        self.prims.draw()
+    def recalc_prims(self):
+        self.prims = Primitives(GL_QUADS, 0, 1)
+        for pos, kind in self.tiles.items():
+            x, y = pos
+            poscoords = [(x, y), (x+1, y), (x+1,y+1), (x,y+1)]
+            if kind == 'rock':
+                texcoords = [(0, 0.5), (0, 1), (0.5, 1), (0.5, 0.5)]
+            else:
+                texcoords = [(0, 0), (0, 0.5), (0.5, 0.5), (0.5, 0)]
+            for pos, tex in zip(poscoords, texcoords):
+                self.prims.addvertex(pos, tex)
+        self.prims.finalize_buffer()
