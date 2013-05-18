@@ -7,6 +7,7 @@ import random
 from ctypes import c_void_p
 import pprint
 import pygame
+import time
 
 currentworld = None
 screensize = None
@@ -72,6 +73,10 @@ class Primitives:
         self.possize = 2
         self.texcoordsize = 2
 
+    def __del__(self):
+        if glDeleteBuffers:
+            glDeleteBuffers(1, [self.glbuffer])
+
     def addvertex(self, pos, texcoord):
         self.buffer += pos + texcoord
         self.numverts += 1
@@ -79,7 +84,7 @@ class Primitives:
     def finalize_buffer(self):
         glBindBuffer(GL_ARRAY_BUFFER, self.glbuffer)
 #        print self.buffer
-        glBufferData(GL_ARRAY_BUFFER, numpy.array(self.buffer, numpy.float32), GL_STATIC_DRAW)
+        glBufferData(GL_ARRAY_BUFFER, numpy.array(self.buffer, numpy.float32), GL_DYNAMIC_DRAW)
 
     def draw(self):
         glBindBuffer(GL_ARRAY_BUFFER, self.glbuffer)
@@ -92,7 +97,7 @@ class Primitives:
         glDrawArrays(self.primtype, 0, self.numverts)
 
 
-class World:
+class World(object):
     def __init__(self, previous = None):
         pass
 
@@ -150,6 +155,8 @@ class Game(World):
         self.terrain = Terrain()
 
         self.player = Player((40.0,35.0))
+        self.gravity = -5
+        self.terminalspeed = 8
 
     def keydown(self, key):
         pass
@@ -177,19 +184,29 @@ class Game(World):
         self.player.draw()
 
     def step(self, dt):
-        pass
+        self.player.velocity[1] += self.gravity * dt
+        if abs(self.player.velocity[1]) > self.terminalspeed:
+            self.player.velocity[1] *= abs(self.terminalspeed / self.player.velocity[1])
+        self.player.pos[0] += self.player.velocity[0] * dt
+        self.player.pos[1] += self.player.velocity[1] * dt
+        self.player.generate_prims()
 
 
 class Player(object):
     def __init__(self, pos):
-        self.pos = pos
-        self.prims = Primitives(GL_QUADS, 0, 1)
+        self.pos = list(pos)
+        self.velocity = [0.0, 0.0]
+        self.generate_prims()
+
+    def generate_prims(self):
         x, y = self.pos
+        self.prims = Primitives(GL_QUADS, 0, 1)
         self.prims.addvertex((x, y), (0.5, 0.5))
         self.prims.addvertex((x+2,y), (1.0, 0.5))
         self.prims.addvertex((x+2, y+3), (1.0, 1.0))
         self.prims.addvertex((x, y+3), (0.5, 1.0))
         self.prims.finalize_buffer()
+
     def draw(self):
         self.prims.draw()
 
@@ -206,10 +223,10 @@ class Terrain(object):
                 else:
                     kind = 'dirt'
                 self.tiles[(x,y)] = kind
-        self.recalc_prims()
+        self.generate_prims()
     def draw(self):
         self.prims.draw()
-    def recalc_prims(self):
+    def generate_prims(self):
         self.prims = Primitives(GL_QUADS, 0, 1)
         for pos, kind in self.tiles.items():
             x, y = pos
