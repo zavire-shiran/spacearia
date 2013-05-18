@@ -139,13 +139,17 @@ class Game(World):
         glSamplerParameteri(self.texsampler, GL_TEXTURE_WRAP_S, GL_REPEAT)
         glSamplerParameteri(self.texsampler, GL_TEXTURE_WRAP_T, GL_REPEAT)
 
-        self.camerapos = [10,5]
-        self.scale = 0.3
+        glClearColor(0.3, 0.3, 0.8, 0.0)
+
+        self.camerapos = [40,25]
+        self.scale = 0.15
 
         self.time = 0
 
         self.camcontrols = {'left': False, 'right': False, 'up': False, 'down': False, 'zoomin':False, 'zoomout':False}
         self.terrain = Terrain()
+
+        self.player = Player((40.0,35.0))
 
     def keydown(self, key):
         pass
@@ -170,20 +174,34 @@ class Game(World):
         
         self.tris.draw()
         self.terrain.draw()
+        self.player.draw()
 
     def step(self, dt):
         pass
 
 
-class Terrain:
+class Player(object):
+    def __init__(self, pos):
+        self.pos = pos
+        self.prims = Primitives(GL_QUADS, 0, 1)
+        x, y = self.pos
+        self.prims.addvertex((x, y), (0.5, 0.5))
+        self.prims.addvertex((x+2,y), (1.0, 0.5))
+        self.prims.addvertex((x+2, y+3), (1.0, 1.0))
+        self.prims.addvertex((x, y+3), (0.5, 1.0))
+        self.prims.finalize_buffer()
+    def draw(self):
+        self.prims.draw()
+
+class Terrain(object):
     def __init__(self):
         self.prims = None
-        self.width = 20
-        self.height = 10
+        self.width = 80
+        self.height = 20
         self.tiles = {}
         for x in xrange(self.width):
             for y in xrange(self.height):
-                if random.random() > 0.5:
+                if random.random() > 0.8:
                     kind = 'rock'
                 else:
                     kind = 'dirt'
