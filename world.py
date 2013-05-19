@@ -149,8 +149,8 @@ class Game(World):
         self.terrain = Terrain()
         self.playercontrols = {'left': False, 'right': False, 'jump': False}
         self.player = Player((40.0,25.0))
-        self.gravity = -5
-        self.terminalspeed = 8
+        self.gravity = -10
+        self.terminalspeed = 15
         self.playermoveaccel = 10
         self.playermovespeed = 10
 
@@ -205,6 +205,8 @@ class Game(World):
 
         # collision detect/handling w/ terrain
         for tile in self.player.intersecting_tiles():
+            # these checks need to be in a better order
+            # the tile most directly under should be first, and diagonals should be last
             if self.terrain.isfilled(tile):
                 tleft, tbottom = tile
                 tright = tleft + 1
