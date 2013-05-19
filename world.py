@@ -147,7 +147,7 @@ class Game(World):
         self.time = 0
 
         self.terrain = Terrain()
-        self.playercontrols = {'left': False, 'right': False}
+        self.playercontrols = {'left': False, 'right': False, 'jump': False}
         self.player = Player((40.0,25.0))
         self.gravity = -5
         self.terminalspeed = 8
@@ -160,13 +160,15 @@ class Game(World):
         if key == pygame.K_d:
             self.playercontrols['right'] = True
         if key == pygame.K_SPACE:
-            print self.player.pos
+            self.playercontrols['jump'] = True
 
     def keyup(self, key):
         if key == pygame.K_a:
             self.playercontrols['left'] = False
         if key == pygame.K_d:
             self.playercontrols['right'] = False
+        if key == pygame.K_SPACE:
+            self.playercontrols['jump'] = False
 
     def draw(self):
         glUseProgram(self.shaderprogram)
@@ -188,16 +190,18 @@ class Game(World):
 
     def step(self, dt):
         # kinematics update
+        if self.playercontrols['left']:
+            self.player.velocity[0] -= self.playermoveaccel * dt
+        if self.playercontrols['right']:
+            self.player.velocity[0] += self.playermoveaccel * dt
         self.player.velocity[1] += self.gravity * dt
+
         if abs(self.player.velocity[1]) > self.terminalspeed:
             self.player.velocity[1] *= abs(self.terminalspeed / self.player.velocity[1])
         self.player.pos[0] += self.player.velocity[0] * dt
         self.player.pos[1] += self.player.velocity[1] * dt
 
-        if self.playercontrols['left']:
-            self.player.velocity[0] -= self.playermoveaccel * dt
-        if self.playercontrols['right']:
-            self.player.velocity[0] += self.playermoveaccel * dt
+        canjump = False
 
         # collision detect/handling w/ terrain
         for tile in self.player.intersecting_tiles():
@@ -220,6 +224,7 @@ class Game(World):
                     if boverlap < toverlap:
                         #tile is under player
                         self.player.pos[1] = float(ttop)
+                        canjump = True
                         if self.player.velocity[1] < 0.0:
                             self.player.velocity[1] = 0.0
                     else:
@@ -240,6 +245,9 @@ class Game(World):
                         self.player.pos[0] = float(tleft) - self.player.size[0]
                         if self.player.velocity[0] > 0.0:
                             self.player.velocity[0] = 0.0
+
+        if canjump and self.playercontrols['jump']:
+            self.player.velocity[1] = 10
 
         # update rendering
         self.player.generate_prims()
