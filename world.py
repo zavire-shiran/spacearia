@@ -152,7 +152,7 @@ class Game(World):
         self.gravity = -10
         self.terminalspeed = 15
         self.playermoveaccel = 10
-        self.playermovespeed = 10
+        self.playermovespeed = 5
 
     def keydown(self, key):
         if key == pygame.K_a:
@@ -194,10 +194,12 @@ class Game(World):
             self.player.velocity[0] -= self.playermoveaccel * dt
         if self.playercontrols['right']:
             self.player.velocity[0] += self.playermoveaccel * dt
+        if abs(self.player.velocity[0]) > self.playermovespeed:
+            self.player.velocity[0] = math.copysign(self.playermovespeed, self.player.velocity[0])
         self.player.velocity[1] += self.gravity * dt
 
         if abs(self.player.velocity[1]) > self.terminalspeed:
-            self.player.velocity[1] *= abs(self.terminalspeed / self.player.velocity[1])
+            self.player.velocity[1] = math.copysign(self.terminalspeed, self.player.velocity[1])
         self.player.pos[0] += self.player.velocity[0] * dt
         self.player.pos[1] += self.player.velocity[1] * dt
 
@@ -238,8 +240,6 @@ class Game(World):
                         if self.player.velocity[1] > 0.0:
                             self.player.velocity[1] = 0.0
                 elif min(loverlap, roverlap) > collision_epsillon:
-                    print self.player.pos, tile
-                    print (pleft, pbottom, pright, ptop), (tleft, tbottom, tright, ttop)
                     if loverlap < roverlap:
                         #tile is left of player
                         self.player.pos[0] = float(tright)
@@ -253,6 +253,15 @@ class Game(World):
 
         if canjump and self.playercontrols['jump']:
             self.player.velocity[1] = 10
+        if canjump and not self.playercontrols['left'] and not self.playercontrols['right']:
+            if self.player.velocity[0] != 0:
+                accel = -math.copysign(self.playermoveaccel * dt, self.player.velocity[0])
+                if abs(self.player.velocity[0]) < accel:
+                    self.player.velocity[0] = 0.0
+                else:
+                    self.player.velocity[0] += accel
+                
+            
 
         # update rendering
         self.player.generate_prims()
