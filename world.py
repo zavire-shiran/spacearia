@@ -130,12 +130,6 @@ class Game(World):
 
         self.tex = texture.Texture('terrain.png')
 
-        self.tris = Primitives(GL_TRIANGLES, 0, 1)
-        self.tris.addvertex((0, 0), (0, 0))
-        self.tris.addvertex((0, 1), (0, 1))
-        self.tris.addvertex((1, 1), (1, 1))
-        self.tris.finalize_buffer()
-
         texsamplers = ctypes.c_uint(0)
         glGenSamplers(1, texsamplers)
         self.texsampler = texsamplers.value
@@ -154,7 +148,7 @@ class Game(World):
         self.camcontrols = {'left': False, 'right': False, 'up': False, 'down': False, 'zoomin':False, 'zoomout':False}
         self.terrain = Terrain()
 
-        self.player = Player((40.0,35.0))
+        self.player = Player((40.0,25.0))
         self.gravity = -5
         self.terminalspeed = 8
 
@@ -179,16 +173,59 @@ class Game(World):
         self.tex()
         glUniform1i(self.texture_uniform, 1)
         
-        self.tris.draw()
         self.terrain.draw()
         self.player.draw()
 
     def step(self, dt):
+        # kinematics update
         self.player.velocity[1] += self.gravity * dt
         if abs(self.player.velocity[1]) > self.terminalspeed:
             self.player.velocity[1] *= abs(self.terminalspeed / self.player.velocity[1])
         self.player.pos[0] += self.player.velocity[0] * dt
         self.player.pos[1] += self.player.velocity[1] * dt
+
+        # collision detect/handling w/ terrain
+        for tile in self.player.intersecting_tiles():
+            if self.terrain.isfilled(tile):
+                tleft, tbottom = tile
+                tright = tleft + 1
+                ttop = tbottom + 1
+
+                pleft, pbottom = self.player.pos
+                pright = self.player.size[0] + pleft
+                ptop = self.player.size[1] + pbottom
+
+                boverlap = ttop - pbottom
+                toverlap = ptop - tbottom
+                loverlap = tright - pleft
+                roverlap = pright - tleft
+                
+                if min(boverlap, toverlap) < min(loverlap, roverlap):
+                    #vertical collision
+                    if boverlap < toverlap:
+                        #tile is under player
+                        self.player.pos[1] = float(ttop)
+                        if self.player.velocity[1] < 0.0:
+                            self.player.velocity[1] = 0.0
+                    else:
+                        #tile is over player
+                        self.player.pos[1] = float(ttop) - self.player.size[1]
+                        if self.player.velocity[1] > 0.0:
+                            self.player.velocity[1] = 0.0
+                else:
+                    #horizontal collision
+                    if loverlap < roverlap:
+                        #tile is left of player
+                        self.player.pos[0] = float(tright)
+                        if self.player.velocity[0] < 0.0:
+                            self.player.velocity[0] = 0.0
+                    else:
+                        #tile is right of player
+                        self.player.pos[0] = float(tleft) - self.player.size[0]
+                        if self.player.velocity[0] > 0.0:
+                            self.player.velocity[0] = 0.0
+
+        # update rendering
         self.player.generate_prims()
 
 
@@ -196,16 +233,27 @@ class Player(object):
     def __init__(self, pos):
         self.pos = list(pos)
         self.velocity = [0.0, 0.0]
+        self.size = (1.2, 2.5)
         self.generate_prims()
 
     def generate_prims(self):
         x, y = self.pos
+        w, h = self.size
         self.prims = Primitives(GL_QUADS, 0, 1)
         self.prims.addvertex((x, y), (0.5, 0.5))
-        self.prims.addvertex((x+2,y), (1.0, 0.5))
-        self.prims.addvertex((x+2, y+3), (1.0, 1.0))
-        self.prims.addvertex((x, y+3), (0.5, 1.0))
+        self.prims.addvertex((x+w,y), (1.0, 0.5))
+        self.prims.addvertex((x+w, y+h), (1.0, 1.0))
+        self.prims.addvertex((x, y+h), (0.5, 1.0))
         self.prims.finalize_buffer()
+    
+    def intersecting_tiles(self):
+        x, y = self.pos
+        w, h = self.size
+        xstart = int(math.floor(x))
+        xend = int(math.ceil(x + w))
+        ystart = int(math.floor(y))
+        yend = int(math.ceil(y+h))
+        return ((x, y) for x in xrange(xstart, xend) for y in xrange(ystart, yend))
 
     def draw(self):
         self.prims.draw()
@@ -226,6 +274,8 @@ class Terrain(object):
         self.generate_prims()
     def draw(self):
         self.prims.draw()
+    def isfilled(self, pos):
+        return tuple(pos) in self.tiles
     def generate_prims(self):
         self.prims = Primitives(GL_QUADS, 0, 1)
         for pos, kind in self.tiles.items():
