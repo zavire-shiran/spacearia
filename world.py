@@ -12,6 +12,7 @@ import time
 currentworld = None
 screensize = None
 
+collision_epsillon = 0.001
 
 def setscreensize(size):
     global screensize
@@ -145,18 +146,27 @@ class Game(World):
 
         self.time = 0
 
-        self.camcontrols = {'left': False, 'right': False, 'up': False, 'down': False, 'zoomin':False, 'zoomout':False}
         self.terrain = Terrain()
-
+        self.playercontrols = {'left': False, 'right': False}
         self.player = Player((40.0,25.0))
         self.gravity = -5
         self.terminalspeed = 8
+        self.playermoveaccel = 10
+        self.playermovespeed = 10
 
     def keydown(self, key):
-        pass
+        if key == pygame.K_a:
+            self.playercontrols['left'] = True
+        if key == pygame.K_d:
+            self.playercontrols['right'] = True
+        if key == pygame.K_SPACE:
+            print self.player.pos
 
     def keyup(self, key):
-        pass
+        if key == pygame.K_a:
+            self.playercontrols['left'] = False
+        if key == pygame.K_d:
+            self.playercontrols['right'] = False
 
     def draw(self):
         glUseProgram(self.shaderprogram)
@@ -184,6 +194,11 @@ class Game(World):
         self.player.pos[0] += self.player.velocity[0] * dt
         self.player.pos[1] += self.player.velocity[1] * dt
 
+        if self.playercontrols['left']:
+            self.player.velocity[0] -= self.playermoveaccel * dt
+        if self.playercontrols['right']:
+            self.player.velocity[0] += self.playermoveaccel * dt
+
         # collision detect/handling w/ terrain
         for tile in self.player.intersecting_tiles():
             if self.terrain.isfilled(tile):
@@ -200,7 +215,7 @@ class Game(World):
                 loverlap = tright - pleft
                 roverlap = pright - tleft
                 
-                if min(boverlap, toverlap) < min(loverlap, roverlap):
+                if min(boverlap, toverlap) < min(loverlap, roverlap) or min(loverlap, roverlap) < collision_epsillon:
                     #vertical collision
                     if boverlap < toverlap:
                         #tile is under player
@@ -212,8 +227,9 @@ class Game(World):
                         self.player.pos[1] = float(ttop) - self.player.size[1]
                         if self.player.velocity[1] > 0.0:
                             self.player.velocity[1] = 0.0
-                else:
-                    #horizontal collision
+                elif min(loverlap, roverlap) > collision_epsillon:
+                    print self.player.pos, tile
+                    print (pleft, pbottom, pright, ptop), (tleft, tbottom, tright, ttop)
                     if loverlap < roverlap:
                         #tile is left of player
                         self.player.pos[0] = float(tright)
@@ -271,11 +287,17 @@ class Terrain(object):
                 else:
                     kind = 'dirt'
                 self.tiles[(x,y)] = kind
+        for y in xrange(self.height, self.height + 10):
+            self.tiles[(10, y)] = 'dirt'
+            self.tiles[(70, y)] = 'dirt'
         self.generate_prims()
+
     def draw(self):
         self.prims.draw()
+
     def isfilled(self, pos):
         return tuple(pos) in self.tiles
+
     def generate_prims(self):
         self.prims = Primitives(GL_QUADS, 0, 1)
         for pos, kind in self.tiles.items():
