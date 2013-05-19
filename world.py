@@ -218,8 +218,11 @@ class Game(World):
                 toverlap = ptop - tbottom
                 loverlap = tright - pleft
                 roverlap = pright - tleft
+
+                if min(loverlap, roverlap) < collision_epsillon or min(boverlap, toverlap) < collision_epsillon:
+                    continue
                 
-                if min(boverlap, toverlap) < min(loverlap, roverlap) or min(loverlap, roverlap) < collision_epsillon:
+                if min(boverlap, toverlap) < min(loverlap, roverlap):
                     #vertical collision
                     if boverlap < toverlap:
                         #tile is under player
