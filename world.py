@@ -108,7 +108,7 @@ class World(object):
     def keyup(self, key):
         pass
 
-    def click(self, pos):
+    def click(self, pos, button):
         pass
 
     def draw(self):
@@ -170,14 +170,15 @@ class Game(World):
         if key == pygame.K_SPACE:
             self.playercontrols['jump'] = False
 
-    def click(self, pos):
+    def click(self, pos, button):
         screenratio = float(screensize[0]) / screensize[1]
         x, y = (math.floor(((pos[0] * 6) - (3 * screenratio)) / self.scale) + self.camerapos[0], 
                 math.floor(((pos[1] * 6) - 3) / -self.scale) + self.camerapos[1])
-
-        if not self.terrain.isfilled((x, y)):
+        if button == 1 and not self.terrain.isfilled((x, y)) and (x,y) not in self.player.intersecting_tiles():
             self.terrain.addblock((x, y), 'dirt')
-        print pos, x, y
+        elif button == 3 and self.terrain.isfilled((x, y)):
+            self.terrain.removeblock((x, y))
+        
 
     def draw(self):
         glUseProgram(self.shaderprogram)
@@ -329,9 +330,16 @@ class Terrain(object):
 
     def addblock(self, pos, kind):
         if pos not in self.tiles:
-            print 'adding', kind, 'at position', pos
             self.tiles[pos] = kind
             self.generate_prims()
+
+    def removeblock(self, pos):
+        if pos in self.tiles:
+            kind = self.tiles[pos]
+            del self.tiles[pos]
+            self.generate_prims()
+            return kind
+        return None
 
     def generate_prims(self):
         self.prims = Primitives(GL_QUADS, 0, 1)

@@ -43,7 +43,7 @@ while 1:
         elif e.type == pygame.KEYUP:
             getworld().keyup(e.key)
         elif e.type == pygame.MOUSEBUTTONDOWN:
-            getworld().click([float(x) * ws / s for x, ws, s in zip(e.pos, screensize, size)])
+            getworld().click([float(x) * ws / s for x, ws, s in zip(e.pos, screensize, size)], e.button)
     thisframe = pygame.time.get_ticks()
     dt = (thisframe - lastframe)/1000.0
     lastframe = thisframe
