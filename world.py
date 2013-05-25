@@ -229,7 +229,17 @@ class Game(World):
         self.player.pos[0] += self.player.velocity[0] * dt
         self.player.pos[1] += self.player.velocity[1] * dt
 
-        canjump = False
+        if self.player.canjump and self.playercontrols['jump']:
+            self.player.velocity[1] = 10
+        if self.player.canjump and not self.playercontrols['left'] and not self.playercontrols['right']:
+            if self.player.velocity[0] != 0:
+                accel = -math.copysign(self.playermoveaccel * dt, self.player.velocity[0])
+                if abs(self.player.velocity[0]) < accel:
+                    self.player.velocity[0] = 0.0
+                else:
+                    self.player.velocity[0] += accel
+
+        self.player.canjump = False
 
         # collision detect/handling w/ terrain
         for tile in self.player.intersecting_tiles():
@@ -257,7 +267,7 @@ class Game(World):
                     if boverlap < toverlap:
                         #tile is under player
                         self.player.pos[1] = float(ttop)
-                        canjump = True
+                        self.player.canjump = True
                         if self.player.velocity[1] < 0.0:
                             self.player.velocity[1] = 0.0
                     else:
@@ -276,16 +286,6 @@ class Game(World):
                         self.player.pos[0] = float(tleft) - self.player.size[0]
                         if self.player.velocity[0] > 0.0:
                             self.player.velocity[0] = 0.0
-
-        if canjump and self.playercontrols['jump']:
-            self.player.velocity[1] = 10
-        if canjump and not self.playercontrols['left'] and not self.playercontrols['right']:
-            if self.player.velocity[0] != 0:
-                accel = -math.copysign(self.playermoveaccel * dt, self.player.velocity[0])
-                if abs(self.player.velocity[0]) < accel:
-                    self.player.velocity[0] = 0.0
-                else:
-                    self.player.velocity[0] += accel
 
         # update rendering
         self.player.generate_prims()
@@ -308,6 +308,7 @@ class Player(object):
         self.pos = list(pos)
         self.velocity = [0.0, 0.0]
         self.size = (1.2, 2.5)
+        self.canjump = False
         self.generate_prims()
 
     def generate_prims(self):
