@@ -142,7 +142,7 @@ class Game(World):
         glClearColor(0.3, 0.3, 0.8, 0.0)
 
         self.camerapos = [40,25]
-        self.scale = 0.15
+        self.scale = 0.25
 
         self.time = 0
 
@@ -169,6 +169,11 @@ class Game(World):
             self.playercontrols['right'] = False
         if key == pygame.K_SPACE:
             self.playercontrols['jump'] = False
+
+    def click(self, pos):
+        screenratio = float(screensize[0]) / screensize[1]
+        x, y = math.floor(((pos[0] * 6) - (3 * screenratio)) / self.scale), math.floor(((pos[1] * 6) - 3) / self.scale)
+        print pos, x, y
 
     def draw(self):
         glUseProgram(self.shaderprogram)
@@ -260,8 +265,6 @@ class Game(World):
                     self.player.velocity[0] = 0.0
                 else:
                     self.player.velocity[0] += accel
-                
-            
 
         # update rendering
         self.player.generate_prims()

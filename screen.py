@@ -21,7 +21,7 @@ def init(size, fullscreen = False):
 
 	glViewport(0, 0, width, height)
 
-        return (ratio*3.0, 3.0)
+        return (ratio, 1.0)
 
 def startframe():
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
