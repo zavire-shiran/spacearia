@@ -154,6 +154,8 @@ class Game(World):
         self.playermoveaccel = 10
         self.playermovespeed = 5
 
+        self.projectiles = []
+
     def keydown(self, key):
         if key == pygame.K_a:
             self.playercontrols['left'] = True
@@ -172,12 +174,18 @@ class Game(World):
 
     def click(self, pos, button):
         screenratio = float(screensize[0]) / screensize[1]
-        x, y = (math.floor(((pos[0] * 6) - (3 * screenratio)) / self.scale) + self.camerapos[0], 
-                math.floor(((pos[1] * 6) - 3) / -self.scale) + self.camerapos[1])
-        if button == 1 and not self.terrain.isfilled((x, y)) and (x,y) not in self.player.intersecting_tiles():
-            self.terrain.addblock((x, y), 'dirt')
-        elif button == 3 and self.terrain.isfilled((x, y)):
-            self.terrain.removeblock((x, y))
+        x, y = (((pos[0] * 6) - (3 * screenratio)) / self.scale + self.camerapos[0], 
+                ((pos[1] * 6) - 3) / -self.scale + self.camerapos[1])
+        tx, ty = math.floor(x), math.floor(y)
+        if button == 1:
+            pos = [self.player.pos[0] + self.player.size[0]/2,
+                   self.player.pos[1] + self.player.size[1]/2]
+            vel = normalize((x - pos[0], y - pos[1]), 20)
+            self.projectiles.append(Projectile(pos, vel))
+        elif button == 1 and not self.terrain.isfilled((tx, ty)) and (tx,ty) not in self.player.intersecting_tiles():
+            self.terrain.addblock((tx, ty), 'dirt')
+        elif button == 3 and self.terrain.isfilled((tx, ty)):
+            self.terrain.removeblock((tx, ty))
         
 
     def draw(self):
@@ -197,6 +205,8 @@ class Game(World):
         
         self.terrain.draw()
         self.player.draw()
+        for proj in self.projectiles:
+            proj.draw()
 
     def step(self, dt):
         # kinematics update
@@ -274,6 +284,16 @@ class Game(World):
         # update rendering
         self.player.generate_prims()
 
+        for proj in self.projectiles:
+            proj.step(dt)
+
+        i = 0
+        while i < len(self.projectiles):
+            if self.projectiles[i].shoulddie():
+                del self.projectiles[i]
+            else:
+                i += 1
+
 
 class Player(object):
     def __init__(self, pos):
@@ -303,6 +323,46 @@ class Player(object):
 
     def draw(self):
         self.prims.draw()
+
+
+def normalize(v, length = 1.0):
+    l = math.sqrt(sum((x*x for x in v)))
+    return tuple(x * length / l for x in v)
+
+
+class Projectile(object):
+    def __init__(self, pos, vel):
+        print pos, vel
+        self.pos = list(pos)
+        self.vel = list(vel)
+        self.generate_prims()
+        self.maxlife = 2.0
+        self.lived = 0.0
+
+    def step(self, dt):
+        self.pos[0] += self.vel[0] * dt
+        self.pos[1] += self.vel[1] * dt
+        self.lived += dt
+        self.generate_prims()
+
+    def shoulddie(self):
+        return self.lived >= self.maxlife
+
+    def generate_prims(self):
+        x, y = self.pos
+        vx, vy = self.vel
+        px, py = normalize((-vy, vx), 0.1) # perpendicular to direction of travel
+        tailx, taily = normalize((-vx, -vy), 3.0)
+        self.prims = Primitives(GL_QUADS, 0, 1)
+        self.prims.addvertex((x - px, y - py), (0.5, 0.0))
+        self.prims.addvertex((x + px, y + py), (0.5, 0.5))
+        self.prims.addvertex((x + px + tailx, y + py + taily), (1.0, 0.5))
+        self.prims.addvertex((x - px + tailx, y - py + taily), (1.0, 0.0))
+        self.prims.finalize_buffer()
+
+    def draw(self):
+        self.prims.draw()
+
 
 class Terrain(object):
     def __init__(self):
