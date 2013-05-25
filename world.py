@@ -14,6 +14,12 @@ screensize = None
 
 collision_epsillon = 0.001
 
+
+def normalize(v, length = 1.0):
+    l = math.sqrt(sum((x*x for x in v)))
+    return tuple(x * length / l for x in v)
+
+
 def setscreensize(size):
     global screensize
     screensize = size
@@ -325,11 +331,6 @@ class Player(object):
 
     def draw(self):
         self.prims.draw()
-
-
-def normalize(v, length = 1.0):
-    l = math.sqrt(sum((x*x for x in v)))
-    return tuple(x * length / l for x in v)
 
 
 class Projectile(object):
