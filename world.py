@@ -142,7 +142,7 @@ class Game(World):
         glClearColor(0.3, 0.3, 0.8, 0.0)
 
         self.camerapos = [40,25]
-        self.scale = 0.25
+        self.scale = 0.15
 
         self.time = 0
 
@@ -172,7 +172,11 @@ class Game(World):
 
     def click(self, pos):
         screenratio = float(screensize[0]) / screensize[1]
-        x, y = math.floor(((pos[0] * 6) - (3 * screenratio)) / self.scale), math.floor(((pos[1] * 6) - 3) / self.scale)
+        x, y = (math.floor(((pos[0] * 6) - (3 * screenratio)) / self.scale) + self.camerapos[0], 
+                math.floor(((pos[1] * 6) - 3) / -self.scale) + self.camerapos[1])
+
+        if not self.terrain.isfilled((x, y)):
+            self.terrain.addblock((x, y), 'dirt')
         print pos, x, y
 
     def draw(self):
@@ -241,7 +245,7 @@ class Game(World):
                             self.player.velocity[1] = 0.0
                     else:
                         #tile is over player
-                        self.player.pos[1] = float(ttop) - self.player.size[1]
+                        self.player.pos[1] = float(tbottom) - self.player.size[1]
                         if self.player.velocity[1] > 0.0:
                             self.player.velocity[1] = 0.0
                 elif min(loverlap, roverlap) > collision_epsillon:
@@ -322,6 +326,12 @@ class Terrain(object):
 
     def isfilled(self, pos):
         return tuple(pos) in self.tiles
+
+    def addblock(self, pos, kind):
+        if pos not in self.tiles:
+            print 'adding', kind, 'at position', pos
+            self.tiles[pos] = kind
+            self.generate_prims()
 
     def generate_prims(self):
         self.prims = Primitives(GL_QUADS, 0, 1)
