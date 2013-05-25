@@ -180,7 +180,7 @@ class Game(World):
         if button == 1:
             pos = [self.player.pos[0] + self.player.size[0]/2,
                    self.player.pos[1] + self.player.size[1]/2]
-            vel = normalize((x - pos[0], y - pos[1]), 20)
+            vel = normalize((x - pos[0], y - pos[1]), 30)
             self.projectiles.append(Projectile(pos, vel))
         elif button == 1 and not self.terrain.isfilled((tx, ty)) and (tx,ty) not in self.player.intersecting_tiles():
             self.terrain.addblock((tx, ty), 'dirt')
@@ -289,7 +289,9 @@ class Game(World):
 
         i = 0
         while i < len(self.projectiles):
-            if self.projectiles[i].shoulddie():
+            x, y = self.projectiles[i].pos
+            tx, ty = math.floor(x), math.floor(y)
+            if self.projectiles[i].shoulddie() or self.terrain.isfilled((tx,ty)):
                 del self.projectiles[i]
             else:
                 i += 1
@@ -332,7 +334,6 @@ def normalize(v, length = 1.0):
 
 class Projectile(object):
     def __init__(self, pos, vel):
-        print pos, vel
         self.pos = list(pos)
         self.vel = list(vel)
         self.generate_prims()
