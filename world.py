@@ -214,6 +214,55 @@ class Game(World):
         for proj in self.projectiles:
             proj.draw()
 
+    def collide_with_terrain(self, actor):
+        actor.canjump = False
+
+        # collision detect/handling w/ terrain
+        for tile in actor.intersecting_tiles():
+            # these checks need to be in a better order
+            # the tile most directly under should be first, and diagonals should be last
+            if self.terrain.isfilled(tile):
+                tleft, tbottom = tile
+                tright = tleft + 1
+                ttop = tbottom + 1
+
+                pleft, pbottom = actor.pos
+                pright = actor.size[0] + pleft
+                ptop = actor.size[1] + pbottom
+
+                boverlap = ttop - pbottom
+                toverlap = ptop - tbottom
+                loverlap = tright - pleft
+                roverlap = pright - tleft
+
+                if min(loverlap, roverlap) < collision_epsillon or min(boverlap, toverlap) < collision_epsillon:
+                    continue
+                
+                if min(boverlap, toverlap) < min(loverlap, roverlap):
+                    #vertical collision
+                    if boverlap < toverlap:
+                        #tile is under actor
+                        actor.pos[1] = float(ttop)
+                        actor.canjump = True
+                        if actor.velocity[1] < 0.0:
+                            actor.velocity[1] = 0.0
+                    else:
+                        #tile is over actor
+                        actor.pos[1] = float(tbottom) - actor.size[1]
+                        if actor.velocity[1] > 0.0:
+                            actor.velocity[1] = 0.0
+                elif min(loverlap, roverlap) > collision_epsillon:
+                    if loverlap < roverlap:
+                        #tile is left of actor
+                        actor.pos[0] = float(tright)
+                        if actor.velocity[0] < 0.0:
+                            actor.velocity[0] = 0.0
+                    else:
+                        #tile is right of actor
+                        actor.pos[0] = float(tleft) - actor.size[0]
+                        if actor.velocity[0] > 0.0:
+                            actor.velocity[0] = 0.0
+
     def step(self, dt):
         # kinematics update
         if self.playercontrols['left']:
@@ -239,53 +288,7 @@ class Game(World):
                 else:
                     self.player.velocity[0] += accel
 
-        self.player.canjump = False
-
-        # collision detect/handling w/ terrain
-        for tile in self.player.intersecting_tiles():
-            # these checks need to be in a better order
-            # the tile most directly under should be first, and diagonals should be last
-            if self.terrain.isfilled(tile):
-                tleft, tbottom = tile
-                tright = tleft + 1
-                ttop = tbottom + 1
-
-                pleft, pbottom = self.player.pos
-                pright = self.player.size[0] + pleft
-                ptop = self.player.size[1] + pbottom
-
-                boverlap = ttop - pbottom
-                toverlap = ptop - tbottom
-                loverlap = tright - pleft
-                roverlap = pright - tleft
-
-                if min(loverlap, roverlap) < collision_epsillon or min(boverlap, toverlap) < collision_epsillon:
-                    continue
-                
-                if min(boverlap, toverlap) < min(loverlap, roverlap):
-                    #vertical collision
-                    if boverlap < toverlap:
-                        #tile is under player
-                        self.player.pos[1] = float(ttop)
-                        self.player.canjump = True
-                        if self.player.velocity[1] < 0.0:
-                            self.player.velocity[1] = 0.0
-                    else:
-                        #tile is over player
-                        self.player.pos[1] = float(tbottom) - self.player.size[1]
-                        if self.player.velocity[1] > 0.0:
-                            self.player.velocity[1] = 0.0
-                elif min(loverlap, roverlap) > collision_epsillon:
-                    if loverlap < roverlap:
-                        #tile is left of player
-                        self.player.pos[0] = float(tright)
-                        if self.player.velocity[0] < 0.0:
-                            self.player.velocity[0] = 0.0
-                    else:
-                        #tile is right of player
-                        self.player.pos[0] = float(tleft) - self.player.size[0]
-                        if self.player.velocity[0] > 0.0:
-                            self.player.velocity[0] = 0.0
+        self.collide_with_terrain(self.player)
 
         # update rendering
         self.player.generate_prims()
