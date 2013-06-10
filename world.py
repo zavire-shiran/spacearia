@@ -290,6 +290,8 @@ class Game(World):
 
         self.collide_with_terrain(self.player)
 
+        self.camerapos = list(self.player.center)
+
         # update rendering
         self.player.generate_prims()
 
@@ -313,6 +315,10 @@ class Player(object):
         self.size = (1.2, 2.5)
         self.canjump = False
         self.generate_prims()
+
+    @property
+    def center(self):
+        return (self.pos[0] + self.size[0]/2, self.pos[1] + self.size[1]/2)
 
     def generate_prims(self):
         x, y = self.pos
