@@ -324,8 +324,8 @@ class Player(object):
         x, y = self.pos
         w, h = self.size
         self.prims = Primitives(GL_QUADS, 0, 1)
-        self.prims.addvertex((x, y), (0.5, 0.5))
-        self.prims.addvertex((x+w,y), (1.0, 0.5))
+        self.prims.addvertex((x, y), (0.5, 0.51))
+        self.prims.addvertex((x+w,y), (1.0, 0.51))
         self.prims.addvertex((x+w, y+h), (1.0, 1.0))
         self.prims.addvertex((x, y+h), (0.5, 1.0))
         self.prims.finalize_buffer()
@@ -419,9 +419,9 @@ class Terrain(object):
             x, y = pos
             poscoords = [(x, y), (x+1, y), (x+1,y+1), (x,y+1)]
             if kind == 'rock':
-                texcoords = [(0, 0.5), (0, 1), (0.5, 1), (0.5, 0.5)]
+                texcoords = [(0.01, 0.51), (0.49, 0.51), (0.49, 0.99), (0.01, 0.99)]
             else:
-                texcoords = [(0, 0), (0, 0.5), (0.5, 0.5), (0.5, 0)]
+                texcoords = [(0.09, 0.01), (0.49, 0.01), (0.49, 0.49), (0.01, 0.49)]
             for pos, tex in zip(poscoords, texcoords):
                 self.prims.addvertex(pos, tex)
         self.prims.finalize_buffer()
